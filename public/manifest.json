@@ -1,7 +1,7 @@
 {
   "name": "Hán Ngữ Chill",
   "short_name": "Hán Ngữ Chill",
-  "description": "Học tiếng Trung qua bài tập tương tác",
+  "description": "Trang web ôn tập từ vựng tiếng Trung",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f5f7f5",
