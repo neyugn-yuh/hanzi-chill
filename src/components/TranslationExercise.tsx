@@ -76,7 +76,8 @@ export default function TranslationExercise({ exercises, onComplete }: Props) {
     const trimmed = input.trim();
     if (!trimmed) return;
 
-    if (trimmed === current.chinese) {
+    const normalize = (s: string) => s.replace(/\s/g, "");
+    if (normalize(trimmed) === normalize(current.chinese)) {
       setStatus("correct");
       setTimeout(() => {
         setCurrentIndex((i) => i + 1);

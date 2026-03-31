@@ -76,7 +76,8 @@ export default function SentenceTranslationExercise({ exercises, onComplete }: P
     const trimmed = input.trim();
     if (!trimmed) return;
 
-    if (trimmed === current.chineseSentence) {
+    const normalize = (s: string) => s.replace(/[\s。？！?!.，,]+$/g, "").replace(/\s/g, "");
+    if (normalize(trimmed) === normalize(current.chineseSentence)) {
       setStatus("correct");
       setTimeout(() => {
         setCurrentIndex((i) => i + 1);
