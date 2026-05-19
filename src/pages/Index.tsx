@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useHskLevels } from "@/hooks/useHskLevels";
 import TranslationExercise from "@/components/TranslationExercise";
+import ChineseToVietnameseExercise from "@/components/ChineseToVietnameseExercise";
 import SentenceExercise from "@/components/SentenceExercise";
 import SentenceTranslationExercise from "@/components/SentenceTranslationExercise";
 import {
@@ -19,7 +20,7 @@ import {
 } from "lucide-react";
 import type { HskLevel } from "@/lib/api";
 
-type ExerciseType = "translation" | "sentence" | "sentenceTranslation";
+type ExerciseType = "translation" | "translationZhToVi" | "sentence" | "sentenceTranslation";
 
 // ─── Exercise type configs ─────────────────────────────────
 
@@ -32,6 +33,17 @@ const EXERCISE_TYPES = [
     grad: "from-emerald-400 to-green-500",
     tagBg: "bg-emerald-50 border-emerald-200",
     tagText: "text-emerald-700",
+    countLabel: "từ",
+    getCount: (l: HskLevel) => l.translationExercises.length,
+  },
+  {
+    type: "translationZhToVi" as ExerciseType,
+    title: "Dịch nghĩa từ mới",
+    description: "Hiển thị từ tiếng Trung, nhập nghĩa tiếng Việt",
+    icon: BookOpen,
+    grad: "from-sky-400 to-blue-500",
+    tagBg: "bg-sky-50 border-sky-200",
+    tagText: "text-sky-700",
     countLabel: "từ",
     getCount: (l: HskLevel) => l.translationExercises.length,
   },
@@ -153,6 +165,8 @@ function ExerciseScreen({
   const exercises =
     exerciseType === "translation"
       ? level.translationExercises
+      : exerciseType === "translationZhToVi"
+        ? level.translationExercises
       : exerciseType === "sentence"
         ? level.sentenceExercises
         : level.sentenceTranslationExercises;
@@ -206,6 +220,12 @@ function ExerciseScreen({
           {exerciseType === "sentence" && (
             <SentenceExercise
               exercises={level.sentenceExercises}
+              onComplete={onBack}
+            />
+          )}
+          {exerciseType === "translationZhToVi" && (
+            <ChineseToVietnameseExercise
+              exercises={level.translationExercises}
               onComplete={onBack}
             />
           )}
