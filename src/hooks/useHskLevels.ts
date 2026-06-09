@@ -1,6 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type HskLevel } from "@/lib/api";
 
+export function useGroups() {
+  const groupsQuery = useQuery({
+    queryKey: ["groups"],
+    queryFn: api.getGroups,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    retry: 2,
+  });
+
+  return {
+    groups: groupsQuery.data ?? [],
+    isLoading: groupsQuery.isLoading,
+    isError: groupsQuery.isError,
+    refetch: groupsQuery.refetch,
+  };
+}
+
 export function useHskLevels() {
   const queryClient = useQueryClient();
 

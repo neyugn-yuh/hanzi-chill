@@ -82,6 +82,24 @@ async function ensureTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
 
+  // ─── Groups (lớp gốc: Sơ Cấp 1, Sơ Cấp 2, Ôn Tập...) ───
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS level_groups (
+      id VARCHAR(255) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      sort_order INT DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `);
+
+  // Add levels.group_id column if missing
+  const [groupCol] = await db.query(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'levels' AND COLUMN_NAME = 'group_id'`,
+  );
+  if (groupCol.length === 0) {
+    await db.query(`ALTER TABLE levels ADD COLUMN group_id VARCHAR(255) NULL`);
+  }
+
   // Seed admin password if not exists
   const [adminRows] = await db.query("SELECT COUNT(*) AS c FROM admin_settings");
   if (adminRows[0].c === 0) {
@@ -182,7 +200,7 @@ async function seedDefaultData(db) {
 
 async function getAllLevels() {
   const db = getPool();
-  const [levels] = await db.query("SELECT * FROM levels ORDER BY sort_order");
+  const [levels] = await db.query("SELECT id, name, sort_order, group_id FROM levels ORDER BY sort_order");
 
   const result = [];
   for (const level of levels) {
@@ -202,6 +220,7 @@ async function getAllLevels() {
     result.push({
       id: level.id,
       name: level.name,
+      groupId: level.group_id,
       translationExercises,
       sentenceTranslationExercises,
       sentenceExercises,
@@ -228,6 +247,20 @@ app.use(async (_req, _res, next) => {
     }
   }
   next();
+});
+
+// GET /api/groups — danh sách lớp gốc
+app.get("/api/groups", async (_req, res) => {
+  try {
+    const db = getPool();
+    const [groups] = await db.query(
+      "SELECT id, name, sort_order AS sortOrder FROM level_groups ORDER BY sort_order",
+    );
+    res.json(groups);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Lỗi khi lấy nhóm" });
+  }
 });
 
 // GET /api/levels
@@ -261,8 +294,8 @@ app.put("/api/levels", async (req, res) => {
       for (let idx = 0; idx < levels.length; idx++) {
         const level = levels[idx];
         await conn.query(
-          "INSERT INTO levels (id, name, sort_order) VALUES (?, ?, ?)",
-          [level.id, level.name, idx],
+          "INSERT INTO levels (id, name, sort_order, group_id) VALUES (?, ?, ?, ?)",
+          [level.id, level.name, idx, level.groupId ?? null],
         );
         for (const e of level.translationExercises || []) {
           await conn.query(

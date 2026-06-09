@@ -24,6 +24,7 @@ export interface SentenceTranslationExercise {
 export interface HskLevel {
   id: string;
   name: string;
+  groupId?: string | null;
   translationExercises: TranslationExercise[];
   sentenceExercises: SentenceExercise[];
   sentenceTranslationExercises: SentenceTranslationExercise[];

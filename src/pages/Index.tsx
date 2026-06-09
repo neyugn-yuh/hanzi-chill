@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useHskLevels } from "@/hooks/useHskLevels";
+import { useHskLevels, useGroups } from "@/hooks/useHskLevels";
 import TranslationExercise from "@/components/TranslationExercise";
 import ChineseToVietnameseExercise from "@/components/ChineseToVietnameseExercise";
 import SentenceExercise from "@/components/SentenceExercise";
@@ -11,12 +11,10 @@ import {
   FileText,
   ChevronRight,
   BookOpen,
-  Sparkles,
-  Brain,
-  Trophy,
   Layers,
   Loader2,
   GraduationCap,
+  Sparkles,
 } from "lucide-react";
 import type { HskLevel } from "@/lib/api";
 
@@ -343,17 +341,214 @@ function ExercisePicker({
   );
 }
 
-// ─── Home Screen (Level Selector) ─────────────────────────
+// ─── Group color palette (root cards) ────────────────────
+
+const GROUP_STYLES: Record<
+  string,
+  { grad: string; icon: typeof GraduationCap; subtitle: string }
+> = {
+  socap1: {
+    grad: "from-emerald-400 to-green-500",
+    icon: GraduationCap,
+    subtitle: "10 bài cơ bản",
+  },
+  socap2: {
+    grad: "from-sky-400 to-blue-500",
+    icon: BookOpen,
+    subtitle: "Sắp ra mắt",
+  },
+  ontap_socap1: {
+    grad: "from-amber-400 to-orange-500",
+    icon: Sparkles,
+    subtitle: "Tổng ôn luyện",
+  },
+};
+
+function countLevelExercises(level: HskLevel) {
+  return (
+    level.translationExercises.length +
+    level.sentenceExercises.length +
+    level.sentenceTranslationExercises.length
+  );
+}
+
+// ─── Group Picker (root, 3 vertical cards) ────────────────
+
+function GroupPicker({
+  groups,
+  levels,
+  onSelect,
+}: {
+  groups: { id: string; name: string }[];
+  levels: HskLevel[];
+  onSelect: (groupId: string) => void;
+}) {
+  return (
+    <div className="min-h-screen bg-background/90">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />
+        <div className="absolute -left-24 top-1/2 h-72 w-72 rounded-full bg-teal-500/5 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto max-w-xl px-4 pt-14 pb-10 sm:pt-20 sm:pb-16">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+            Hán Ngữ Chill
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Chọn chương trình bạn muốn học
+          </p>
+        </div>
+
+        <div className="stagger-children flex flex-col gap-4">
+          {groups.map((group) => {
+            const style = GROUP_STYLES[group.id] ?? {
+              grad: "from-slate-400 to-slate-500",
+              icon: Layers,
+              subtitle: "",
+            };
+            const Icon = style.icon;
+            const lessonCount = levels.filter(
+              (l) => l.groupId === group.id,
+            ).length;
+            const isEmpty = lessonCount === 0;
+
+            return (
+              <button
+                key={group.id}
+                onClick={() => !isEmpty && onSelect(group.id)}
+                disabled={isEmpty}
+                className={`
+                  group relative flex items-center gap-4 rounded-2xl border-2 border-border/50
+                  bg-card p-5 text-left transition-all duration-200
+                  ${
+                    isEmpty
+                      ? "opacity-60 cursor-not-allowed"
+                      : "hover:-translate-y-1 hover:shadow-xl hover:border-emerald-300"
+                  }
+                `}
+              >
+                <div
+                  className={`flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${style.grad} shadow-md transition-transform group-hover:scale-110`}
+                  style={{ width: "3.5rem", height: "3.5rem" }}
+                >
+                  <Icon className="h-7 w-7 text-white" />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-lg font-bold text-foreground sm:text-xl">
+                    {group.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+                    {isEmpty
+                      ? "Đang cập nhật nội dung"
+                      : `${lessonCount} bài · ${style.subtitle}`}
+                  </p>
+                </div>
+
+                {isEmpty ? (
+                  <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                    Sắp có
+                  </span>
+                ) : (
+                  <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/40 transition-all group-hover:translate-x-1.5 group-hover:text-muted-foreground" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Level Picker (lessons within a group) ────────────────
+
+function LevelPicker({
+  groupName,
+  levels,
+  onSelect,
+  onBack,
+}: {
+  groupName: string;
+  levels: HskLevel[];
+  onSelect: (levelId: string) => void;
+  onBack: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-background/90">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />
+        <div className="absolute -left-24 top-1/2 h-72 w-72 rounded-full bg-teal-500/5 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto max-w-xl px-4 pt-10 pb-10 sm:pt-14">
+        <button
+          onClick={onBack}
+          className="mb-6 flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Chọn chương trình khác
+        </button>
+
+        <div className="mb-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border" />
+          <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <Layers className="h-3.5 w-3.5" />
+            {groupName}
+          </span>
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border" />
+        </div>
+
+        <div className="stagger-children grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {levels.map((level, i) => {
+            const color = LEVEL_COLORS[i % LEVEL_COLORS.length];
+            const totalExercises = countLevelExercises(level);
+
+            return (
+              <button
+                key={level.id}
+                onClick={() => onSelect(level.id)}
+                className="group relative flex flex-col items-center gap-3 rounded-2xl border-2 border-border/50 bg-card p-5 text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:border-emerald-300"
+              >
+                <div
+                  className={`flex items-center justify-center rounded-2xl bg-gradient-to-br ${color.grad} shadow-md transition-transform group-hover:scale-110`}
+                  style={{ width: "3rem", height: "3rem" }}
+                >
+                  <GraduationCap className="h-6 w-6 text-white" />
+                </div>
+
+                <p className="font-bold text-foreground text-sm sm:text-base">
+                  {level.name}
+                </p>
+
+                <span className="text-xs text-muted-foreground">
+                  {totalExercises} bài tập
+                </span>
+
+                <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/30 transition-all group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Home Screen (3-tier navigation) ──────────────────────
 
 export default function Index() {
   const { levels, isLoading, isError, refetch } = useHskLevels();
+  const { groups, isLoading: groupsLoading } = useGroups();
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedLevelId, setSelectedLevelId] = useState<string | null>(null);
   const [exerciseType, setExerciseType] = useState<ExerciseType | null>(null);
 
-  if (isLoading) return <LoadingScreen />;
+  if (isLoading || groupsLoading) return <LoadingScreen />;
   if (isError) return <ErrorScreen onRetry={refetch} />;
 
   const selectedLevel = levels.find((l) => l.id === selectedLevelId);
+  const selectedGroup = groups.find((g) => g.id === selectedGroupId);
 
   // Exercise screen
   if (selectedLevel && exerciseType) {
@@ -377,72 +572,27 @@ export default function Index() {
     );
   }
 
-  // Level selector (home)
+  // Level picker (lessons within selected group)
+  if (selectedGroup) {
+    const groupLevels = levels
+      .filter((l) => l.groupId === selectedGroup.id)
+      .sort((a, b) => a.name.localeCompare(b.name, "vi", { numeric: true }));
+    return (
+      <LevelPicker
+        groupName={selectedGroup.name}
+        levels={groupLevels}
+        onSelect={setSelectedLevelId}
+        onBack={() => setSelectedGroupId(null)}
+      />
+    );
+  }
+
+  // Root: group picker
   return (
-    <div className="min-h-screen bg-background/90">
-      {/* Ambient background */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />
-        <div className="absolute -left-24 top-1/2 h-72 w-72 rounded-full bg-teal-500/5 blur-3xl" />
-      </div>
-
-      <div className="relative mx-auto max-w-xl px-4 pt-14 pb-10 sm:pt-20 sm:pb-16">
-        {/* Hero */}
-
-        {/* Divider */}
-        <div className="mb-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border" />
-          <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            <Layers className="h-3.5 w-3.5" />
-            Chọn Bài Tập
-          </span>
-          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border" />
-        </div>
-
-        {/* Level cards */}
-        <div className="stagger-children grid grid-cols-3 gap-3">
-          {levels.map((level, i) => {
-            const color = LEVEL_COLORS[i % LEVEL_COLORS.length];
-            const totalExercises =
-              level.translationExercises.length +
-              level.sentenceExercises.length +
-              level.sentenceTranslationExercises.length;
-
-            return (
-              <button
-                key={level.id}
-                onClick={() => setSelectedLevelId(level.id)}
-                className={`
-                  group relative flex flex-col items-center gap-3 rounded-2xl border-2 border-border/50
-                  bg-card p-5 text-center transition-all duration-200
-                  hover:-translate-y-1 hover:shadow-xl hover:border-emerald-300
-                `}
-              >
-                {/* Icon */}
-                <div
-                  className={`flex items-center justify-center rounded-2xl bg-gradient-to-br ${color.grad} shadow-md transition-transform group-hover:scale-110`}
-                  style={{ width: "3rem", height: "3rem" }}
-                >
-                  <GraduationCap className="h-6 w-6 text-white" />
-                </div>
-
-                {/* Name */}
-                <p className="font-bold text-foreground text-sm sm:text-base">
-                  {level.name}
-                </p>
-
-                {/* Count */}
-                <span className="text-xs text-muted-foreground">
-                  {totalExercises} bài tập
-                </span>
-
-                {/* Arrow hint */}
-                <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/30 transition-all group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+    <GroupPicker
+      groups={groups}
+      levels={levels}
+      onSelect={setSelectedGroupId}
+    />
   );
 }

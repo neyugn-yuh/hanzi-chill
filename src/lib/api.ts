@@ -43,14 +43,24 @@ export interface SentenceExercise {
 export interface HskLevel {
   id: string;
   name: string;
+  groupId: string | null;
   translationExercises: TranslationExercise[];
   sentenceTranslationExercises: SentenceTranslationExercise[];
   sentenceExercises: SentenceExercise[];
 }
 
+export interface LevelGroup {
+  id: string;
+  name: string;
+  sortOrder: number;
+}
+
 // ─── Level API ─────────────────────────────────────────────
 
 export const api = {
+  /** Lấy danh sách lớp gốc (Sơ Cấp 1, Sơ Cấp 2, Ôn Tập...) */
+  getGroups: () => request<LevelGroup[]>("/api/groups"),
+
   /** Lấy tất cả cấp độ + bài tập */
   getLevels: () => request<HskLevel[]>("/api/levels"),
 
